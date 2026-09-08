@@ -2,7 +2,7 @@
 
 Web app installabile per la gestione di una squadra di calcio. Non richiede server o database: i dati vengono salvati nel browser del dispositivo.
 
-La formazione è configurata per una squadra **Esordienti a 9**, con selezione di nove titolari e moduli 3-3-2, 3-2-3 e 2-3-3.
+La formazione è configurata per una squadra **Esordienti a 9**, con selezione di nove titolari e moduli 3-3-2, 3-2-3 e 2-3-3. L'agenda gestisce allenamenti e partite; per ogni partita si possono impostare quattro formazioni indipendenti, una per ciascun tempo.
 
 ## Pubblicazione su GitHub Pages (metodo consigliato)
 

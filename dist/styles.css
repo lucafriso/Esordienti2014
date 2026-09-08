@@ -127,6 +127,13 @@ dialog::backdrop { background: rgba(8,25,17,.58); backdrop-filter: blur(3px); }
 .detail-hero .avatar { width: 58px; height: 58px; flex-basis: 58px; font-size: 1.2rem; }
 .availability-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
 .availability-row select { min-height: 38px; max-width: 145px; padding: 0 8px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.match-lineup-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 24px 0 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+.match-lineup-heading .eyebrow { margin-bottom: 3px; }
+.period-picker { grid-template-columns: repeat(4, 1fr); margin-bottom: 8px; }
+.period-picker button { padding: 0 5px; font-size: .75rem; }
+.period-player-list { padding: 0 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--cream); }
+.period-player-list .list-row { min-height: 56px; }
+.period-player-list .avatar { flex-basis: 38px; height: 38px; }
 .toast { position: fixed; z-index: 60; right: 20px; bottom: calc(90px + var(--safe-bottom)); left: 20px; max-width: 420px; margin: auto; padding: 13px 16px; border-radius: 14px; color: white; background: #173c2c; box-shadow: 0 10px 30px rgba(0,0,0,.2); opacity: 0; pointer-events: none; transform: translateY(12px); transition: .22s ease; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .install-note { padding: 14px; border-radius: 14px; color: var(--green-900); background: var(--green-100); font-size: .84rem; line-height: 1.45; }

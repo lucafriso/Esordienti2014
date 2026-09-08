@@ -19,9 +19,9 @@ function demoState() {
   return {
     teamName: 'ASD Aurora', season: '2026/27', formation: '3-3-2', starters: players.slice(0,9).map(p=>p.id), players, lastBackupAt: null,
     events: [
-      {id:uid(),type:'training',title:'Allenamento tecnico',date:atTime(2,19,30),location:'Campo comunale',opponent:'',home:true,teamScore:null,opponentScore:null,notes:'',attendance:{}},
-      {id:uid(),type:'match',title:'Campionato',date:atTime(5,15,0),location:'Stadio comunale',opponent:'Real Borgo',home:true,teamScore:null,opponentScore:null,notes:'',attendance:{}},
-      {id:uid(),type:'match',title:'Campionato',date:atTime(-7,15,0),location:'Campo sportivo Nord',opponent:'Atletico Blu',home:false,teamScore:2,opponentScore:1,notes:'',attendance:{}}
+      {id:uid(),type:'training',title:'Allenamento tecnico',date:atTime(2,19,30),location:'Campo comunale',opponent:'',home:true,teamScore:null,opponentScore:null,notes:'',attendance:{},lineups:[[],[],[],[]]},
+      {id:uid(),type:'match',title:'Campionato',date:atTime(5,15,0),location:'Stadio comunale',opponent:'Real Borgo',home:true,teamScore:null,opponentScore:null,notes:'',attendance:{},lineups:[[],[],[],[]]},
+      {id:uid(),type:'match',title:'Campionato',date:atTime(-7,15,0),location:'Campo sportivo Nord',opponent:'Atletico Blu',home:false,teamScore:2,opponentScore:1,notes:'',attendance:{},lineups:[[],[],[],[]]}
     ]
   };
 }
@@ -29,6 +29,7 @@ function demoState() {
 let state = loadState();
 let activeView = 'home';
 let eventFilter = 'upcoming';
+let activeMatchPeriod = 0;
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -53,7 +54,11 @@ function normalizeState(data) {
     starters: Array.isArray(data.starters) ? data.starters.slice(0, 9) : [],
     lastBackupAt: data.lastBackupAt || null
   };
-  normalized.events = normalized.events.map(event => ({...event, attendance: event.attendance || {}}));
+  normalized.events = normalized.events.map(event => ({
+    ...event,
+    attendance: event.attendance || {},
+    lineups: Array.from({length:4},(_,index)=>Array.isArray(event.lineups?.[index]) ? event.lineups[index].slice(0,9) : [])
+  }));
   return normalized;
 }
 
@@ -65,8 +70,8 @@ function saveState(message) {
 
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const dateFmt = (iso, opts = {dateStyle:'medium', timeStyle:'short'}) => new Intl.DateTimeFormat('it-IT', opts).format(new Date(iso));
-const eventIcon = type => ({training:'⚽',match:'🏟',meeting:'👥'}[type] || '●');
-const eventTypeName = type => ({training:'Allenamento',match:'Partita',meeting:'Riunione'}[type] || type);
+const eventIcon = type => ({training:'⚽',match:'🏟'}[type] || '●');
+const eventTypeName = type => ({training:'Allenamento',match:'Partita'}[type] || 'Evento');
 const eventLabel = e => e.type === 'match' && e.opponent ? `vs ${e.opponent}` : e.title;
 const isPast = e => new Date(e.date) < new Date();
 
@@ -176,7 +181,7 @@ function eventForm(event) {
   const localDate = new Date(new Date(e.date).getTime()-new Date(e.date).getTimezoneOffset()*60000).toISOString().slice(0,16);
   openDialog({eyebrow:'AGENDA',title:event?'Modifica evento':'Nuovo evento',body:`
     <input type="hidden" name="entity" value="event"><input type="hidden" name="id" value="${e.id}">
-    <div class="form-grid"><div class="field"><label for="type">Tipo</label><select id="type" name="type"><option value="training" ${e.type==='training'?'selected':''}>Allenamento</option><option value="match" ${e.type==='match'?'selected':''}>Partita</option><option value="meeting" ${e.type==='meeting'?'selected':''}>Riunione</option></select></div>
+    <div class="form-grid"><div class="field"><label for="type">Tipo</label><select id="type" name="type"><option value="training" ${e.type==='training'?'selected':''}>Allenamento</option><option value="match" ${e.type==='match'?'selected':''}>Partita</option></select></div>
     <div class="field"><label for="event-date">Data e ora</label><input id="event-date" name="date" type="datetime-local" value="${localDate}" required></div>
     <div class="field full"><label for="title">Titolo</label><input id="title" name="title" value="${esc(e.title)}" required></div>
     <div class="field full"><label for="location">Luogo</label><input id="location" name="location" value="${esc(e.location)}"></div>
@@ -200,12 +205,25 @@ function viewPlayer(p) {
 
 function viewEvent(e) {
   const activePlayers=state.players.filter(p=>p.active).sort((a,b)=>a.number-b.number);
+  activeMatchPeriod = 0;
   openDialog({eyebrow:eventTypeName(e.type).toUpperCase(),title:eventLabel(e),body:`
     <div class="detail-hero"><div class="event-type-icon">${eventIcon(e.type)}</div><div><div class="row-title">${dateFmt(e.date)}</div><div class="row-meta">${esc(e.location||'Luogo da definire')}</div></div></div>
     ${e.notes?`<p>${esc(e.notes)}</p>`:''}
     <h2 style="margin:18px 0 8px">Disponibilità</h2>
-    ${activePlayers.map(p=>`<div class="availability-row"><span>${p.number} · ${esc(p.firstName)} ${esc(p.lastName)}</span><select data-attendance-event="${e.id}" data-player="${p.id}"><option value="pending" ${(e.attendance[p.id]||'pending')==='pending'?'selected':''}>Da confermare</option><option value="present" ${e.attendance[p.id]==='present'?'selected':''}>Presente</option><option value="absent" ${e.attendance[p.id]==='absent'?'selected':''}>Assente</option></select></div>`).join('')}`,
+    ${activePlayers.length ? activePlayers.map(p=>`<div class="availability-row"><span>${p.number} · ${esc(p.firstName)} ${esc(p.lastName)}</span><select data-attendance-event="${e.id}" data-player="${p.id}"><option value="pending" ${(e.attendance[p.id]||'pending')==='pending'?'selected':''}>Da confermare</option><option value="present" ${e.attendance[p.id]==='present'?'selected':''}>Presente</option><option value="absent" ${e.attendance[p.id]==='absent'?'selected':''}>Assente</option></select></div>`).join('') : emptyState('♟','Inserisci prima i giocatori nella Rosa')}
+    ${e.type==='match'?'<div id="match-lineups"></div>':''}`,
     actions:`<button class="secondary-button" value="cancel">Chiudi</button><button type="button" class="primary-button" data-action="edit-event" data-id="${e.id}">Modifica</button>`});
+  if(e.type==='match') renderMatchLineupEditor(e);
+}
+
+function renderMatchLineupEditor(event) {
+  const container=$('#match-lineups'); if(!container)return;
+  const activePlayers=state.players.filter(p=>p.active).sort((a,b)=>a.number-b.number);
+  const selected=event.lineups[activeMatchPeriod] || [];
+  container.innerHTML=`
+    <div class="match-lineup-heading"><div><p class="eyebrow">FORMAZIONI PARTITA</p><h2>Giocatori per tempo</h2></div><span class="selection-count">${selected.length}/9</span></div>
+    <div class="segmented period-picker">${[0,1,2,3].map(index=>`<button type="button" class="${index===activeMatchPeriod?'active':''}" data-action="match-period" data-event-id="${event.id}" data-period="${index}">${index+1}° tempo</button>`).join('')}</div>
+    <div class="period-player-list">${activePlayers.length ? activePlayers.map(p=>`<div class="list-row"><div class="avatar">${p.number}</div><div class="grow"><div class="row-title">${esc(p.firstName)} ${esc(p.lastName)}</div><div class="row-meta">${esc(p.role)}</div></div><button type="button" class="starter-toggle ${selected.includes(p.id)?'selected':''}" data-action="toggle-match-player" data-event-id="${event.id}" data-player-id="${p.id}" aria-label="${selected.includes(p.id)?'Rimuovi':'Aggiungi'} dal ${activeMatchPeriod+1}° tempo">✓</button></div>`).join('') : emptyState('♟','Nessun giocatore disponibile')}</div>`;
 }
 
 function settingsForm() {
@@ -228,7 +246,7 @@ $('#dialog-form').addEventListener('submit',e=>{
   if(entity==='event'){
     const existing=state.events.find(x=>x.id===data.get('id'));
     const num=v=>v===''?null:Number(v);
-    const item={id:data.get('id')||uid(),type:data.get('type'),title:data.get('title').trim(),date:new Date(data.get('date')).toISOString(),location:data.get('location').trim(),opponent:data.get('opponent')?.trim()||'',home:data.has('home'),teamScore:num(data.get('teamScore')),opponentScore:num(data.get('opponentScore')),notes:data.get('notes').trim(),attendance:existing?.attendance||{}};
+    const item={id:data.get('id')||uid(),type:data.get('type'),title:data.get('title').trim(),date:new Date(data.get('date')).toISOString(),location:data.get('location').trim(),opponent:data.get('opponent')?.trim()||'',home:data.has('home'),teamScore:num(data.get('teamScore')),opponentScore:num(data.get('opponentScore')),notes:data.get('notes').trim(),attendance:existing?.attendance||{},lineups:existing?.lineups||[[],[],[],[]]};
     const index=state.events.findIndex(x=>x.id===item.id); index>=0?state.events[index]=item:state.events.push(item);
   }
   if(entity==='settings'){state.teamName=data.get('teamName').trim();state.season=data.get('season').trim();}
@@ -244,7 +262,7 @@ document.addEventListener('click',e=>{
   if(action==='add-player')playerForm();
   if(action==='edit-player'){closeDialog();playerForm(state.players.find(p=>p.id===id));}
   if(action==='view-player')viewPlayer(state.players.find(p=>p.id===id));
-  if(action==='delete-player'&&confirm('Eliminare questo giocatore?')){state.players=state.players.filter(p=>p.id!==id);state.starters=state.starters.filter(x=>x!==id);closeDialog();saveState('Giocatore eliminato');}
+  if(action==='delete-player'&&confirm('Eliminare questo giocatore?')){state.players=state.players.filter(p=>p.id!==id);state.starters=state.starters.filter(x=>x!==id);state.events.forEach(event=>event.lineups=event.lineups.map(lineup=>lineup.filter(x=>x!==id)));closeDialog();saveState('Giocatore eliminato');}
   if(action==='add-event')eventForm();
   if(action==='edit-event'){closeDialog();eventForm(state.events.find(x=>x.id===id));}
   if(action==='view-event')viewEvent(state.events.find(x=>x.id===id));
@@ -253,6 +271,18 @@ document.addEventListener('click',e=>{
     if(state.starters.includes(id))state.starters=state.starters.filter(x=>x!==id);
     else if(state.starters.length<9)state.starters.push(id); else return showToast('Hai già selezionato 9 titolari');
     saveState();
+  }
+  if(action==='match-period'){
+    activeMatchPeriod=Number(button.dataset.period);
+    const event=state.events.find(x=>x.id===button.dataset.eventId);
+    if(event)renderMatchLineupEditor(event);
+  }
+  if(action==='toggle-match-player'){
+    const event=state.events.find(x=>x.id===button.dataset.eventId); if(!event)return;
+    const playerId=button.dataset.playerId; const lineup=event.lineups[activeMatchPeriod];
+    if(lineup.includes(playerId))event.lineups[activeMatchPeriod]=lineup.filter(x=>x!==playerId);
+    else if(lineup.length<9)lineup.push(playerId); else return showToast('Hai già selezionato 9 giocatori per questo tempo');
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); renderMatchLineupEditor(event);
   }
   if(action==='export-data')exportData();
   if(action==='backup-now')exportData();
