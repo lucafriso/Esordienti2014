@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#087443">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CalcioTeam">
+  <meta name="description" content="Gestione semplice di rosa, impegni e formazione della tua squadra di calcio.">
+  <title>CalcioTeam</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">CT</div>
+      <div class="brand-copy">
+        <strong id="header-team">ASD Aurora</strong>
+        <span id="header-season">Stagione 2026/27</span>
+      </div>
+      <button class="icon-button" id="settings-button" aria-label="Impostazioni squadra">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm8-3.2c0-.6-.1-1.1-.2-1.7l2-1.5-2-3.4-2.4 1c-.9-.7-1.9-1.3-3-1.7L14 2h-4l-.4 2.7c-1.1.4-2.1 1-3 1.7l-2.4-1-2 3.4 2 1.5A8 8 0 0 0 4 12c0 .6.1 1.1.2 1.7l-2 1.5 2 3.4 2.4-1c.9.7 1.9 1.3 3 1.7L10 22h4l.4-2.7c1.1-.4 2.1-1 3-1.7l2.4 1 2-3.4-2-1.5c.1-.6.2-1.1.2-1.7Z"/></svg>
+      </button>
+    </header>
+
+    <main id="main-content">
+      <section class="view active" id="view-home" data-view="home">
+        <div class="welcome-row">
+          <div><p class="eyebrow">PANORAMICA</p><h1>La tua squadra</h1></div>
+          <div class="date-chip" id="today-label"></div>
+        </div>
+        <article class="next-card" id="next-event-card"></article>
+        <div class="stats-grid" id="stats-grid"></div>
+        <section id="backup-reminder"></section>
+        <section class="panel">
+          <div class="section-heading"><h2>Ultimi risultati</h2></div>
+          <div id="recent-results"></div>
+        </section>
+      </section>
+
+      <section class="view" id="view-players" data-view="players">
+        <div class="page-title-row">
+          <div><p class="eyebrow">SQUADRA</p><h1>Rosa</h1></div>
+          <button class="primary-button compact" data-action="add-player">+ Giocatore</button>
+        </div>
+        <label class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+          <input id="player-search" type="search" placeholder="Cerca nome o numero" autocomplete="off">
+        </label>
+        <div id="players-list"></div>
+      </section>
+
+      <section class="view" id="view-events" data-view="events">
+        <div class="page-title-row">
+          <div><p class="eyebrow">CALENDARIO</p><h1>Agenda</h1></div>
+          <button class="primary-button compact" data-action="add-event">+ Evento</button>
+        </div>
+        <div class="segmented" role="tablist" aria-label="Filtro eventi">
+          <button class="active" data-event-filter="upcoming">Prossimi</button>
+          <button data-event-filter="past">Conclusi</button>
+        </div>
+        <div id="events-list"></div>
+      </section>
+
+      <section class="view" id="view-lineup" data-view="lineup">
+        <div class="page-title-row">
+          <div><p class="eyebrow">PARTITA</p><h1>Formazione</h1></div>
+          <span class="selection-count" id="lineup-count">0/9</span>
+        </div>
+        <div class="segmented formation-picker" role="tablist" aria-label="Modulo">
+          <button data-formation="3-3-2">3-3-2</button>
+          <button data-formation="3-2-3">3-2-3</button>
+          <button data-formation="2-3-3">2-3-3</button>
+        </div>
+        <div class="pitch" id="pitch" aria-label="Schema della formazione"></div>
+        <section class="panel lineup-panel">
+          <div class="section-heading"><h2>Seleziona i titolari</h2><span>Massimo 9</span></div>
+          <div id="lineup-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigazione principale">
+      <button class="active" data-nav="home"><span class="nav-icon">⌂</span><span>Home</span></button>
+      <button data-nav="players"><span class="nav-icon">♟</span><span>Rosa</span></button>
+      <button data-nav="events"><span class="nav-icon">▦</span><span>Agenda</span></button>
+      <button data-nav="lineup"><span class="nav-icon">⬡</span><span>Formazione</span></button>
+    </nav>
+  </div>
+
+  <dialog id="app-dialog">
+    <form method="dialog" id="dialog-form">
+      <div class="dialog-header">
+        <div><p class="eyebrow" id="dialog-eyebrow"></p><h2 id="dialog-title"></h2></div>
+        <button class="icon-button close-button" value="cancel" aria-label="Chiudi">×</button>
+      </div>
+      <div id="dialog-body"></div>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
